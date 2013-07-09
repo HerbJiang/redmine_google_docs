@@ -141,21 +141,40 @@ EOF
 			if not obj.respond_to? :journalized_id or not obj.respond_to? :journalized_type
 				if obj.is_a? Issue
 					# we're in the "Description" part of the Issue page
-					id = obj.id
+		        		if args.length > 2
+						fieldname = clean_key(args[2])
+                                        	id = obj.custom_value_for(CustomField.find_by_name(fieldname)).to_s
+						if id == ""
+							id = nil
+						end
+					else
+						id = obj.id
+					end
 				end
 			else
 				# we're in the comment thread of an Issue page
-				id = obj.journalized_id
+		        	if args.length > 2
+					real_issue_id = obj.journalized_id
+					issue = Issue.find(real_issue_id)
+					fieldname = clean_key(args[2])
+                                        id = issue.custom_value_for(CustomField.find_by_name(fieldname)).to_s
+					if id == ""
+						id = nil
+					end
+
+				else
+					id = obj.journalized_id
+				end
 			end
 			if id
-				col = "B" #assuming second column
+				col = "A" #assuming second column
 				issue_id = id
 				issue_id_with_hash = "##{issue_id}"
 				query = "SELECT * WHERE #{col}='#{issue_id}' OR #{col}=#{issue_id} OR #{col}='#{issue_id_with_hash}'"
 
 				clean_query = clean_key(query)
 
-			out = render_spreadsheet(key, clean_query, sheet, "true")
+				out = render_spreadsheet(key, clean_query, sheet, "true")
 			else
 				raise "You need to be on an issue page to use the <strong>googleissue</strong> macro."
 			end
